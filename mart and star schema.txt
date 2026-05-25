@@ -1,0 +1,89 @@
+USE WAREHOUSE AGRICULTURE_WH;
+USE DATABASE AGRICULTURE_DB;
+USE SCHEMA MART;
+
+-- =========================================
+-- DIM FARMER
+-- =========================================
+
+CREATE OR REPLACE DYNAMIC TABLE DIM_FARMER
+TARGET_LAG = '1 MINUTE'
+WAREHOUSE = AGRICULTURE_WH
+AS
+SELECT
+    farmerId,
+    farmerName,
+    village,
+    district,
+    contactNumber,
+    farmerStatus
+FROM CORE.Farmer_RAW_TO_CORE;
+
+-- =========================================
+-- DIM CROP
+-- =========================================
+
+CREATE OR REPLACE DYNAMIC TABLE DIM_CROP
+TARGET_LAG = '1 MINUTE'
+WAREHOUSE = AGRICULTURE_WH
+AS
+SELECT
+    cropId,
+    cropName,
+    cropCategory,
+    season
+FROM CORE.Crop_RAW_TO_CORE;
+
+-- =========================================
+-- FACT PRODUCTION
+-- =========================================
+
+CREATE OR REPLACE DYNAMIC TABLE FACT_PRODUCTION
+TARGET_LAG = '1 MINUTE'
+WAREHOUSE = AGRICULTURE_WH
+AS
+SELECT
+
+    FP.productionId,
+    FP.harvestDate,
+    FP.productionQuantity,
+
+    F.farmerId,
+    F.farmerName,
+    F.village,
+    F.district,
+
+    C.cropId,
+    C.cropName,
+    C.cropCategory,
+    C.season,
+
+    FU.fertilizerName,
+    FU.quantityUsed,
+    FU.usageDate,
+
+    YA.alertReason,
+    YA.yieldScore,
+    YA.alertStatus
+
+FROM CORE.FarmProduction_RAW_TO_CORE FP
+
+LEFT JOIN DIM_FARMER F
+ON FP.farmerId = F.farmerId
+
+LEFT JOIN DIM_CROP C
+ON FP.cropId = C.cropId
+
+LEFT JOIN CORE.FertilizerUsage_RAW_TO_CORE FU
+ON FP.cropId = FU.cropId
+
+LEFT JOIN CORE.YieldAlert_RAW_TO_CORE YA
+ON FP.cropId = YA.cropId;
+
+-- =========================================
+-- VALIDATION
+-- =========================================
+
+SELECT * FROM DIM_FARMER;
+SELECT * FROM DIM_CROP;
+SELECT * FROM FACT_PRODUCTION;
